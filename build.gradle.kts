@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "dev.jacobandersen"
-version = "0.0.1-SNAPSHOT"
+version = file("version.txt").readText().trim()
 description = "forge"
 
 java {
@@ -77,6 +77,10 @@ kotlin {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+tasks.bootJar {
+    archiveFileName.set("forge.jar")
 }
 
 ktlint {
