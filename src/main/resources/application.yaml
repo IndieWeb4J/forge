@@ -16,3 +16,4 @@ sigil:
 
 forge:
   media-endpoint: ${FORGE_MEDIA_ENDPOINT:/micropub/media}
+  owner: ${FORGE_OWNER:}

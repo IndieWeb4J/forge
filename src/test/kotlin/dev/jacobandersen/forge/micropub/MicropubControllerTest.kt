@@ -8,6 +8,7 @@ import dev.jacobandersen.microformats2.Mf2Object
 import dev.jacobandersen.microformats2.Mf2Value
 import dev.jacobandersen.sigil.client.TokenIntrospector
 import dev.jacobandersen.sigil.protocol.IntrospectionResponse
+import org.hamcrest.Matchers.containsString
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.given
@@ -18,6 +19,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.http.MediaType
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
@@ -26,6 +28,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 @SpringBootTest(
     properties = [
+        "forge.owner=https://me.example",
         "forge.syndicate-to[0].uid=bridgy",
         "forge.syndicate-to[0].name=Bridgy",
     ],
@@ -44,9 +47,13 @@ class MicropubControllerTest {
     @MockitoBean
     private lateinit var tokenIntrospector: TokenIntrospector
 
-    private fun activeToken(token: String = "token") {
+    private fun activeToken(
+        token: String = "token",
+        me: String = "https://me.example",
+        scope: String = "create update delete undelete media",
+    ) {
         given(tokenIntrospector.introspect(token))
-            .willReturn(IntrospectionResponse(active = true, me = "https://me.example"))
+            .willReturn(IntrospectionResponse(active = true, me = me, scope = scope))
     }
 
     private fun postDto(): PostDto =
@@ -72,8 +79,10 @@ class MicropubControllerTest {
                 ),
         )
 
+    // ------------------------------------------------------------ authentication
+
     @Test
-    fun `rejects a request without a token`() {
+    fun `rejects a request without a token with unauthorized and WWW-Authenticate`() {
         mockMvc
             .perform(
                 post("/micropub")
@@ -81,7 +90,72 @@ class MicropubControllerTest {
                     .param("h", "entry")
                     .param("content", "hi"),
             ).andExpect(status().isUnauthorized)
+            .andExpect(header().string("WWW-Authenticate", containsString("Bearer")))
+            .andExpect(jsonPath("$.error").value("unauthorized"))
     }
+
+    @Test
+    fun `accepts the token as an access_token form parameter`() {
+        activeToken()
+        given(contentWriteClient.create(any()))
+            .willReturn(WritePostResult(id = "id-1", slug = "hello", url = "https://me.example/hello", version = 1))
+
+        mockMvc
+            .perform(
+                post("/micropub")
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .param("access_token", "token")
+                    .param("h", "entry")
+                    .param("content", "hi"),
+            ).andExpect(status().isCreated)
+    }
+
+    @Test
+    fun `rejects an inactive token`() {
+        given(tokenIntrospector.introspect("dead")).willReturn(IntrospectionResponse(active = false))
+
+        mockMvc
+            .perform(
+                post("/micropub")
+                    .header("Authorization", "Bearer dead")
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .param("h", "entry")
+                    .param("content", "hi"),
+            ).andExpect(status().isUnauthorized)
+            .andExpect(jsonPath("$.error").value("invalid_token"))
+    }
+
+    @Test
+    fun `rejects a token issued for another identity with forbidden`() {
+        activeToken(me = "https://someone-else.example")
+
+        mockMvc
+            .perform(
+                post("/micropub")
+                    .header("Authorization", "Bearer token")
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .param("h", "entry")
+                    .param("content", "hi"),
+            ).andExpect(status().isForbidden)
+            .andExpect(jsonPath("$.error").value("forbidden"))
+    }
+
+    @Test
+    fun `rejects a write when the token lacks the scope`() {
+        activeToken(scope = "create")
+
+        mockMvc
+            .perform(
+                delete("/micropub")
+                    .header("Authorization", "Bearer token")
+                    .param("url", "https://me.example/hello"),
+            ).andExpect(status().isUnauthorized)
+            .andExpect(header().string("WWW-Authenticate", containsString("insufficient_scope")))
+            .andExpect(jsonPath("$.error").value("insufficient_scope"))
+            .andExpect(jsonPath("$.scope").value("delete"))
+    }
+
+    // ------------------------------------------------------------------ writes
 
     @Test
     fun `creates a post and returns 201 with Location`() {
@@ -102,6 +176,36 @@ class MicropubControllerTest {
 
         verify(contentWriteClient).create(any())
     }
+
+    @Test
+    fun `rejects malformed JSON with invalid_request`() {
+        activeToken()
+
+        mockMvc
+            .perform(
+                post("/micropub")
+                    .header("Authorization", "Bearer token")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{not json"),
+            ).andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.error").value("invalid_request"))
+    }
+
+    @Test
+    fun `rejects an unknown delete action`() {
+        activeToken()
+
+        mockMvc
+            .perform(
+                delete("/micropub")
+                    .header("Authorization", "Bearer token")
+                    .param("url", "https://me.example/hello")
+                    .param("action", "bogus"),
+            ).andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.error").value("invalid_request"))
+    }
+
+    // ----------------------------------------------------------------- queries
 
     @Test
     fun `q=config advertises the media endpoint and syndication targets`() {
@@ -159,6 +263,33 @@ class MicropubControllerTest {
     }
 
     @Test
+    fun `q=properties accepts array bracket notation`() {
+        activeToken()
+        given(contentReadClient.postByUrl("https://me.example/hello")).willReturn(postDto())
+
+        mockMvc
+            .perform(
+                get("/micropub")
+                    .header("Authorization", "Bearer token")
+                    .param("q", "properties")
+                    .param("url", "https://me.example/hello")
+                    .param("properties[]", "content"),
+            ).andExpect(status().isOk)
+            .andExpect(jsonPath("$.properties.content[0]").value("hi"))
+            .andExpect(jsonPath("$.properties.category").doesNotExist())
+    }
+
+    @Test
+    fun `q=source without a url is a bad request`() {
+        activeToken()
+
+        mockMvc
+            .perform(get("/micropub").header("Authorization", "Bearer token").param("q", "source"))
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.error").value("invalid_request"))
+    }
+
+    @Test
     fun `q=source returns 404 for an unknown url`() {
         activeToken()
         given(contentReadClient.postByUrl("https://me.example/missing")).willReturn(null)
@@ -178,5 +309,6 @@ class MicropubControllerTest {
         mockMvc
             .perform(get("/micropub").header("Authorization", "Bearer token").param("q", "bogus"))
             .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.error").value("invalid_request"))
     }
 }

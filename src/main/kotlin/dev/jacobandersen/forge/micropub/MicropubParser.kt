@@ -104,8 +104,3 @@ class MicropubParser(
         val RESERVED = setOf("h", "access_token", "action", "post-status", "visibility")
     }
 }
-
-/** A malformed Micropub request; mapped to 400 by the controller. */
-class MicropubError(
-    message: String,
-) : RuntimeException(message)

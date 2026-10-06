@@ -78,8 +78,3 @@ class MicropubService(
         return post
     }
 }
-
-/** A Micropub target that does not exist (404). */
-class MicropubNotFound(
-    message: String,
-) : RuntimeException(message)

@@ -12,6 +12,22 @@ Bastion, the authoritative content service.
   `content-client`'s read API so Bastion stays Micropub-ignorant.
 - Token validation via `sigil-client` (`TokenIntrospector`) in `MicropubTokenFilter`.
 
+## Micropub conformance
+
+- Authentication accepts the token from the `Authorization` header or an `access_token`
+  form parameter (Micropub 5.1 requires both). The filter introspects via Sigil, rejects a
+  token whose `me` is not `forge.owner` with `403 forbidden`, and stashes granted scopes on
+  the request.
+- Writes require the matching scope (`create`/`update`/`delete`/`undelete`/`media`); a
+  missing scope is `401 insufficient_scope` (Micropub 3.8 uses 401, not 403), with the
+  required scope in the body and `WWW-Authenticate`.
+- `MicropubExceptionHandler` (global `@RestControllerAdvice`) shapes every error as
+  `{"error": ..., "error_description": ...}`; malformed JSON and unknown `action`/missing
+  `url` are `400`, downstream `ContentClientException` is `502`.
+- `q=source`/`q=properties` accept both `properties` and `properties[]`.
+- `forge.owner` (env `FORGE_OWNER`) must be set in every non-local deployment; blank
+  disables identity enforcement.
+
 ## Dependencies
 
 - `microformats2` - mf2 model + parser; Forge parses to mf2 but does **no** post-type discovery.
@@ -23,5 +39,5 @@ Bastion, the authoritative content service.
 - `./gradlew test` runs the suite (MockMvc + mocked content/sigil clients); `./gradlew ktlintCheck`
   lints (`ktlintFormat` fixes).
 - Configuration: `content.client.base-url` (Bastion), `sigil.client.base-url` (Sigil),
-  `forge.media-endpoint`, `forge.syndicate-to`. See `src/main/resources/application.yaml`.
+  `forge.media-endpoint`, `forge.syndicate-to`, `forge.owner`. See `src/main/resources/application.yaml`.
 - Jackson 3 (`tools.jackson.*`), not Jackson 2.

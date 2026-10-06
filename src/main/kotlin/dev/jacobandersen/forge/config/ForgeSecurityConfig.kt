@@ -9,6 +9,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+import tools.jackson.databind.ObjectMapper
 
 /**
  * Forge is a stateless facade: no sessions, no CSRF. The Micropub token filter
@@ -18,7 +19,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 class ForgeSecurityConfig {
     @Bean
-    fun micropubTokenFilter(introspector: ObjectProvider<TokenIntrospector>): MicropubTokenFilter = MicropubTokenFilter(introspector)
+    fun micropubTokenFilter(
+        introspector: ObjectProvider<TokenIntrospector>,
+        properties: ForgeProperties,
+        objectMapper: ObjectMapper,
+    ): MicropubTokenFilter = MicropubTokenFilter(introspector, properties, objectMapper)
 
     @Bean
     fun securityFilterChain(

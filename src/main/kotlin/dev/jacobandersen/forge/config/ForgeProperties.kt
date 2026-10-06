@@ -13,6 +13,12 @@ data class ForgeProperties(
     val mediaEndpoint: String = "/micropub/media",
     /** Syndication targets advertised by `q=config` / `q=syndicate-to`. */
     val syndicateTo: List<SyndicateTarget> = emptyList(),
+    /**
+     * The site owner's canonical profile URL. Access tokens must be issued for
+     * this identity (Micropub 3.8 `forbidden` otherwise). Blank disables the
+     * check, which is only appropriate for local development.
+     */
+    val owner: String = "",
 )
 
 /** An advertised syndication target. */
