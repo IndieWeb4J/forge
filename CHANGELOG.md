@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.3](https://github.com/Marchland/forge/compare/v0.2.2...v0.2.3) (2026-10-06)
+
+
+### Bug Fixes
+
+* **micropub:** conform error responses and enforce token authorization ([49c9d9a](https://github.com/Marchland/forge/commit/49c9d9a055d0b5850ec813ebac455428d55f8e9f))
+* **micropub:** conform error responses and enforce token authorization ([c863bd7](https://github.com/Marchland/forge/commit/c863bd7cfa5f21b36c5cf9a153c8ce4f4bb1d98f))
+
 ## [0.2.2](https://github.com/Marchland/forge/compare/v0.2.1...v0.2.2) (2026-10-06)
 
 
