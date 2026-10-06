@@ -1,7 +1,7 @@
 package dev.jacobandersen.forge.micropub
 
-import dev.jacobandersen.mf24j.Mf2Value
-import dev.jacobandersen.mf24j.json.toMf2ValueOrNull
+import dev.jacobandersen.microformats2.Mf2Value
+import dev.jacobandersen.microformats2.json.toMf2ValueOrNull
 import org.springframework.stereotype.Component
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.ObjectMapper

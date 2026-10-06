@@ -3,7 +3,7 @@ package dev.jacobandersen.forge.micropub
 import dev.jacobandersen.content.client.ContentReadClient
 import dev.jacobandersen.forge.config.ForgeProperties
 import dev.jacobandersen.forge.config.SyndicateTarget
-import dev.jacobandersen.mf24j.Mf2Object
+import dev.jacobandersen.microformats2.Mf2Object
 import org.springframework.stereotype.Service
 
 /**

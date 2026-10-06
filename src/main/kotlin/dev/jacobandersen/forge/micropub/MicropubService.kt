@@ -6,8 +6,8 @@ import dev.jacobandersen.content.client.CreatePostCommand
 import dev.jacobandersen.content.client.MediaUploadResult
 import dev.jacobandersen.content.client.UpdatePostCommand
 import dev.jacobandersen.content.client.WritePostResult
-import dev.jacobandersen.mf24j.Mf2Object
-import dev.jacobandersen.mf24j.Mf2Value
+import dev.jacobandersen.microformats2.Mf2Object
+import dev.jacobandersen.microformats2.Mf2Value
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
 import java.io.ByteArrayInputStream

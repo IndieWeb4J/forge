@@ -1,10 +1,10 @@
 package dev.jacobandersen.forge.micropub
 
-import dev.jacobandersen.mf24j.Mf2Object
-import dev.jacobandersen.mf24j.Mf2Value
-import dev.jacobandersen.mf24j.json.toMf2Object
-import dev.jacobandersen.mf24j.plainTextOrNull
-import dev.jacobandersen.mf24j.texts
+import dev.jacobandersen.microformats2.Mf2Object
+import dev.jacobandersen.microformats2.Mf2Value
+import dev.jacobandersen.microformats2.json.toMf2Object
+import dev.jacobandersen.microformats2.plainTextOrNull
+import dev.jacobandersen.microformats2.texts
 import org.springframework.stereotype.Component
 import tools.jackson.databind.ObjectMapper
 import tools.jackson.databind.node.ObjectNode
