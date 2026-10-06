@@ -20,8 +20,8 @@ repositories {
     mavenCentral()
     mavenLocal()
     maven {
-        name = "ContentClientGitHubPackages"
-        url = uri("https://maven.pkg.github.com/jacobandersen/content-client")
+        name = "BastionGitHubPackages"
+        url = uri("https://maven.pkg.github.com/jacobsandersen/bastion")
         credentials {
             username = project.findProperty("gpr.user") as String?
             password = project.findProperty("gpr.token") as String?
@@ -30,7 +30,7 @@ repositories {
 }
 
 extra["mf24jVersion"] = "0.1.0"
-extra["contentClientVersion"] = "0.1.0"
+extra["contentClientVersion"] = "1.3.33"
 extra["sigilVersion"] = "0.1.0"
 
 dependencies {
