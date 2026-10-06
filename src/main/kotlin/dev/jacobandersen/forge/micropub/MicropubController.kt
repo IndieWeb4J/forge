@@ -5,13 +5,11 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
-import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
 import org.springframework.web.multipart.MultipartHttpServletRequest
@@ -22,6 +20,10 @@ import tools.jackson.databind.ObjectMapper
  * (PATCH JSON or `action=update` form), delete/undelete, the media endpoint, and
  * the `q=` queries. All content work is delegated to the content service; Forge
  * only parses, forwards, and shapes the response.
+ *
+ * Every write requires the scope for its operation (Micropub 5.4 / 3.8); the
+ * token filter has already authenticated the request and stashed the granted
+ * scopes.
  */
 @RestController
 @RequestMapping("/micropub")
@@ -35,12 +37,10 @@ class MicropubController(
     // ---------------------------------------------------------------- queries
 
     @GetMapping
-    fun query(
-        @RequestParam("q") q: String,
-        @RequestParam("url", required = false) url: String?,
-        @RequestParam("properties", required = false) requested: List<String>?,
-    ): ResponseEntity<Any> =
-        when (q) {
+    fun query(request: HttpServletRequest): ResponseEntity<Any> {
+        val q = request.getParameter("q") ?: throw MicropubError("The 'q' parameter is required")
+        val requested = queryProperties(request)
+        return when (q) {
             "config" -> {
                 ResponseEntity.ok(queries.config())
             }
@@ -50,19 +50,21 @@ class MicropubController(
             }
 
             "source" -> {
-                val source = url?.let { queries.source(it) }
-                if (source == null) ResponseEntity.notFound().build() else ResponseEntity.ok(source)
+                val url = requireUrl(request.getParameter("url"))
+                ResponseEntity.ok(queries.source(url) ?: throw MicropubNotFound("No post found at $url"))
             }
 
             "properties" -> {
-                val source = url?.let { queries.sourceProperties(it, requested ?: emptyList()) }
-                if (source == null) ResponseEntity.notFound().build() else ResponseEntity.ok(mapOf("properties" to source))
+                val url = requireUrl(request.getParameter("url"))
+                val properties = queries.sourceProperties(url, requested) ?: throw MicropubNotFound("No post found at $url")
+                ResponseEntity.ok(mapOf("properties" to properties))
             }
 
             else -> {
-                ResponseEntity.badRequest().body(mapOf("error" to "unsupported query: $q"))
+                throw MicropubError("unsupported query: $q")
             }
         }
+    }
 
     // -------------------------------------------------------------- write ops
 
@@ -76,33 +78,41 @@ class MicropubController(
 
     @PatchMapping(consumes = [MediaType.APPLICATION_JSON_VALUE])
     fun patch(
+        request: HttpServletRequest,
         @RequestBody body: String,
     ): ResponseEntity<Any> {
+        requireScope(request, "update")
         val url = objectMapper.readTree(body)["url"]?.asString()
         return update(url, updateParser.fromJson(body))
     }
 
     @DeleteMapping
-    fun delete(
-        @RequestParam("url") url: String,
-        @RequestParam("action", required = false, defaultValue = "delete") action: String,
-    ): ResponseEntity<Any> {
-        val result =
-            if (action ==
-                "undelete"
-            ) {
-                service.undelete(url.substringAfterLast('/'))
-            } else {
-                service.delete(url.substringAfterLast('/'))
+    fun delete(request: HttpServletRequest): ResponseEntity<Any> {
+        val id = requireUrl(request.getParameter("url")).postId()
+        return when (val action = request.getParameter("action") ?: "delete") {
+            "delete" -> {
+                requireScope(request, "delete")
+                ResponseEntity.ok(service.delete(id))
             }
-        return ResponseEntity.ok(result)
+
+            "undelete" -> {
+                requireScope(request, "undelete")
+                ResponseEntity.ok(service.undelete(id))
+            }
+
+            else -> {
+                throw MicropubError("unsupported action: $action")
+            }
+        }
     }
 
     // ------------------------------------------------------------------ media
 
     @PostMapping("/media")
-    fun media(request: MultipartHttpServletRequest): ResponseEntity<Any> {
-        val file = request.fileMap.values.firstOrNull() ?: return ResponseEntity.badRequest().body(mapOf("error" to "no file"))
+    fun media(request: HttpServletRequest): ResponseEntity<Any> {
+        requireScope(request, "media")
+        if (request !is MultipartHttpServletRequest) throw MicropubError("The media endpoint requires multipart/form-data")
+        val file = request.fileMap.values.firstOrNull() ?: throw MicropubError("no file")
         val result = service.uploadMedia(file)
         return ResponseEntity
             .status(HttpStatus.CREATED)
@@ -117,24 +127,27 @@ class MicropubController(
         val action = runCatching { objectMapper.readTree(body)["action"]?.asString() }.getOrNull()
         return when (action) {
             null, "create" -> {
+                requireScope(request, "create")
                 location(service.create(parser.fromJson(body)))
             }
 
             "update" -> {
-                val url = objectMapper.readTree(body)["url"]?.asString()
-                update(url, updateParser.fromJson(body))
+                requireScope(request, "update")
+                update(objectMapper.readTree(body)["url"]?.asString(), updateParser.fromJson(body))
             }
 
             "delete" -> {
-                ResponseEntity.ok(service.delete(requireUrl(body)))
+                requireScope(request, "delete")
+                ResponseEntity.ok(service.delete(requireUrl(objectMapper.readTree(body)["url"]?.asString()).postId()))
             }
 
             "undelete" -> {
-                ResponseEntity.ok(service.undelete(requireUrl(body)))
+                requireScope(request, "undelete")
+                ResponseEntity.ok(service.undelete(requireUrl(objectMapper.readTree(body)["url"]?.asString()).postId()))
             }
 
             else -> {
-                ResponseEntity.badRequest().body(mapOf("error" to "unsupported action: $action"))
+                throw MicropubError("unsupported action: $action")
             }
         }
     }
@@ -143,25 +156,27 @@ class MicropubController(
         val params = request.parameterMap.mapValues { it.value.toList() }
         return when (params["action"]?.firstOrNull()) {
             null, "create" -> {
-                val media = mediaParts(request)
-                location(service.create(parser.fromForm(params, media)))
+                requireScope(request, "create")
+                location(service.create(parser.fromForm(params, mediaParts(request))))
             }
 
             "update" -> {
-                val url = params["url"]?.firstOrNull()
-                update(url, updateParser.fromForm(params))
+                requireScope(request, "update")
+                update(params["url"]?.firstOrNull(), updateParser.fromForm(params))
             }
 
             "delete" -> {
-                ResponseEntity.ok(service.delete(requireUrl(params["url"]?.firstOrNull())))
+                requireScope(request, "delete")
+                ResponseEntity.ok(service.delete(requireUrl(params["url"]?.firstOrNull()).postId()))
             }
 
             "undelete" -> {
-                ResponseEntity.ok(service.undelete(requireUrl(params["url"]?.firstOrNull())))
+                requireScope(request, "undelete")
+                ResponseEntity.ok(service.undelete(requireUrl(params["url"]?.firstOrNull()).postId()))
             }
 
             else -> {
-                ResponseEntity.badRequest().body(mapOf("error" to "unsupported action"))
+                throw MicropubError("unsupported action")
             }
         }
     }
@@ -170,7 +185,7 @@ class MicropubController(
         url: String?,
         operations: MicropubUpdateOperations,
     ): ResponseEntity<Any> {
-        val id = requireUrl(url).substringAfterLast('/')
+        val id = requireUrl(url).postId()
         return ResponseEntity.ok(service.update(id, operations))
     }
 
@@ -195,13 +210,25 @@ class MicropubController(
             bytes = bytes,
         )
 
+    private fun requireScope(
+        request: HttpServletRequest,
+        scope: String,
+    ) {
+        val granted = (request.getAttribute(MicropubTokenFilter.SCOPE_ATTRIBUTE) as? String).orEmpty()
+        if (granted.split(' ').none { it == scope }) {
+            throw MicropubInsufficientScope(scope)
+        }
+    }
+
+    private fun queryProperties(request: HttpServletRequest): List<String> =
+        (
+            request.getParameterValues("properties").orEmpty().asList() +
+                request.getParameterValues("properties[]").orEmpty().asList()
+        ).filter { it.isNotBlank() }
+
     private fun requireUrl(url: String?): String = url?.takeIf { it.isNotBlank() } ?: throw MicropubError("url is required")
 
+    private fun String.postId(): String = substringAfterLast('/')
+
     private fun HttpServletRequest.isJson(): Boolean = (contentType ?: "").contains(MediaType.APPLICATION_JSON_VALUE, ignoreCase = true)
-
-    @ExceptionHandler(MicropubError::class)
-    fun onBadRequest(e: MicropubError): ResponseEntity<Any> = ResponseEntity.badRequest().body(mapOf("error" to e.message))
-
-    @ExceptionHandler(MicropubNotFound::class)
-    fun onNotFound(e: MicropubNotFound): ResponseEntity<Any> = ResponseEntity.status(HttpStatus.NOT_FOUND).body(mapOf("error" to e.message))
 }
