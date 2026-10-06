@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.1](https://github.com/jacobsandersen/forge/compare/v0.2.0...v0.2.1) (2026-10-06)
+
+
+### Tests
+
+* cover Micropub q= queries ([5c068e2](https://github.com/jacobsandersen/forge/commit/5c068e2adf87afb8542237e5388a90c6baa3cedb))
+* cover the Micropub q= queries over the content read API ([d91989c](https://github.com/jacobsandersen/forge/commit/d91989c94f974829e56011e7fcf35f41af461636))
+
 ## [0.2.0](https://github.com/jacobsandersen/forge/compare/v0.1.0...v0.2.0) (2026-10-06)
 
 
