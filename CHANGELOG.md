@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.2](https://github.com/Marchland/forge/compare/v0.2.1...v0.2.2) (2026-10-06)
+
+
+### Miscellaneous Chores
+
+* move packages to Marchland and rename mf24j -&gt; microformats2 ([415ed6b](https://github.com/Marchland/forge/commit/415ed6b2fc6d3d20dd7b9267d1fdd6254eb45600))
+* move packages to Marchland and rename mf24j -&gt; microformats2 ([32695be](https://github.com/Marchland/forge/commit/32695bec73df5aab20161dba7c21d4c1cb6241b7))
+
+
+### Build System
+
+* bump content-client to 2.0.2 ([44d2a50](https://github.com/Marchland/forge/commit/44d2a5081bc83dfdea60db71ea1b1a6837a33c0e))
+* bump microformats2 to 0.1.2 ([88c8f66](https://github.com/Marchland/forge/commit/88c8f66e5c5922ec52a859a7a469cada9d370f95))
+
 ## [0.2.1](https://github.com/jacobsandersen/forge/compare/v0.2.0...v0.2.1) (2026-10-06)
 
 
