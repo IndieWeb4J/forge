@@ -27,11 +27,27 @@ repositories {
             password = project.findProperty("gpr.token") as String?
         }
     }
+    maven {
+        name = "Mf24jGitHubPackages"
+        url = uri("https://maven.pkg.github.com/jacobsandersen/mf24j")
+        credentials {
+            username = project.findProperty("gpr.user") as String?
+            password = project.findProperty("gpr.token") as String?
+        }
+    }
+    maven {
+        name = "SigilGitHubPackages"
+        url = uri("https://maven.pkg.github.com/jacobsandersen/sigil")
+        credentials {
+            username = project.findProperty("gpr.user") as String?
+            password = project.findProperty("gpr.token") as String?
+        }
+    }
 }
 
 extra["mf24jVersion"] = "0.1.0"
 extra["contentClientVersion"] = "1.3.33"
-extra["sigilVersion"] = "0.1.0"
+extra["sigilVersion"] = "0.2.0"
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webmvc")
