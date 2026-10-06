@@ -23,24 +23,24 @@ repositories {
         name = "BastionGitHubPackages"
         url = uri("https://maven.pkg.github.com/jacobsandersen/bastion")
         credentials {
-            username = project.findProperty("gpr.user") as String?
-            password = project.findProperty("gpr.token") as String?
+            username = System.getenv("PACKAGES_USER") ?: System.getenv("GITHUB_ACTOR") ?: (project.findProperty("gpr.user") as String?)
+            password = System.getenv("PACKAGES_TOKEN") ?: System.getenv("GITHUB_TOKEN") ?: (project.findProperty("gpr.token") as String?)
         }
     }
     maven {
         name = "Mf24jGitHubPackages"
         url = uri("https://maven.pkg.github.com/jacobsandersen/mf24j")
         credentials {
-            username = project.findProperty("gpr.user") as String?
-            password = project.findProperty("gpr.token") as String?
+            username = System.getenv("PACKAGES_USER") ?: System.getenv("GITHUB_ACTOR") ?: (project.findProperty("gpr.user") as String?)
+            password = System.getenv("PACKAGES_TOKEN") ?: System.getenv("GITHUB_TOKEN") ?: (project.findProperty("gpr.token") as String?)
         }
     }
     maven {
         name = "SigilGitHubPackages"
         url = uri("https://maven.pkg.github.com/jacobsandersen/sigil")
         credentials {
-            username = project.findProperty("gpr.user") as String?
-            password = project.findProperty("gpr.token") as String?
+            username = System.getenv("PACKAGES_USER") ?: System.getenv("GITHUB_ACTOR") ?: (project.findProperty("gpr.user") as String?)
+            password = System.getenv("PACKAGES_TOKEN") ?: System.getenv("GITHUB_TOKEN") ?: (project.findProperty("gpr.token") as String?)
         }
     }
 }
