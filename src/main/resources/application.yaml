@@ -1,3 +1,18 @@
 spring:
   application:
     name: forge
+
+# Forge is a stateless facade: content lives in Bastion (content-client) and
+# tokens are validated by Sigil (sigil-client). All endpoints are deployment
+# configuration; Forge owns no data of its own.
+content:
+  client:
+    base-url: ${BASTION_URL:}
+    service-token: ${BASTION_SERVICE_TOKEN:}
+
+sigil:
+  client:
+    base-url: ${SIGIL_URL:}
+
+forge:
+  media-endpoint: ${FORGE_MEDIA_ENDPOINT:/micropub/media}
