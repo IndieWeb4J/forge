@@ -4,8 +4,8 @@ import dev.jacobandersen.content.client.ContentReadClient
 import dev.jacobandersen.content.client.ContentWriteClient
 import dev.jacobandersen.content.client.PostDto
 import dev.jacobandersen.content.client.WritePostResult
-import dev.jacobandersen.mf24j.Mf2Object
-import dev.jacobandersen.mf24j.Mf2Value
+import dev.jacobandersen.microformats2.Mf2Object
+import dev.jacobandersen.microformats2.Mf2Value
 import dev.jacobandersen.sigil.client.TokenIntrospector
 import dev.jacobandersen.sigil.protocol.IntrospectionResponse
 import org.junit.jupiter.api.Test

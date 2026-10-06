@@ -27,5 +27,5 @@
 * add lint and test workflow ([658c74b](https://github.com/jacobsandersen/forge/commit/658c74b96a70f723813a288bfb95a84cffa798c4))
 * add release-please and a distroless image pipeline ([8c93d62](https://github.com/jacobsandersen/forge/commit/8c93d621124b7c6566e75b6fc834b248a769f461))
 * authenticate package reads with a dedicated PACKAGES_TOKEN ([9f3a73d](https://github.com/jacobsandersen/forge/commit/9f3a73d0631d6d5bea3456b68767c7a493be0525))
-* read private content-client via a packages token; add mf24j/sigil repos, sigil-client 0.2.0 ([ec852c3](https://github.com/jacobsandersen/forge/commit/ec852c376dd98cdd8dd6aee864a78328be1b6c5d))
+* read private content-client via a packages token; add microformats2/sigil repos, sigil-client 0.2.0 ([ec852c3](https://github.com/jacobsandersen/forge/commit/ec852c376dd98cdd8dd6aee864a78328be1b6c5d))
 * release-please + distroless image pipeline ([dd2386c](https://github.com/jacobsandersen/forge/commit/dd2386cba481a8921856e3b16277d3e0e9cb08d1))

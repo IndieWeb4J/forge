@@ -14,7 +14,7 @@ Bastion, the authoritative content service.
 
 ## Dependencies
 
-- `mf24j` - mf2 model + parser; Forge parses to mf2 but does **no** post-type discovery.
+- `microformats2` - mf2 model + parser; Forge parses to mf2 but does **no** post-type discovery.
 - `content-client` - the write/read/media contract with Bastion (`dev.jacobandersen:content-client`).
 - `sigil-client` - token introspection (`dev.jacobandersen:sigil-client`).
 

@@ -1,6 +1,6 @@
 package dev.jacobandersen.forge.micropub
 
-import dev.jacobandersen.mf24j.Mf2Object
+import dev.jacobandersen.microformats2.Mf2Object
 
 /**
  * A media part of a Micropub request: the property it targets, the client

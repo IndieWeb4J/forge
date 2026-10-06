@@ -44,7 +44,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/jacobsandersen/forge
+          images: ghcr.io/marchland/forge
           tags: |
             type=semver,pattern={{version}}
 
