@@ -19,3 +19,8 @@ class MicropubInsufficientScope(
 class MicropubForbidden(
     message: String,
 ) : RuntimeException(message)
+
+/** The request used a content type the endpoint cannot handle; mapped to 415. */
+class MicropubUnsupportedMediaType(
+    message: String,
+) : RuntimeException(message)

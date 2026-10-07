@@ -26,7 +26,7 @@ import tools.jackson.databind.ObjectMapper
  * scopes.
  */
 @RestController
-@RequestMapping("/micropub")
+@RequestMapping("/micropub", produces = [MediaType.APPLICATION_JSON_VALUE])
 class MicropubController(
     private val parser: MicropubParser,
     private val updateParser: MicropubUpdateParser,
@@ -42,7 +42,7 @@ class MicropubController(
         val requested = queryProperties(request)
         return when (q) {
             "config" -> {
-                ResponseEntity.ok(queries.config())
+                ResponseEntity.ok(queries.config(requestBaseUrl(request)))
             }
 
             "syndicate-to" -> {
@@ -69,12 +69,16 @@ class MicropubController(
     // -------------------------------------------------------------- write ops
 
     @PostMapping
-    fun post(request: HttpServletRequest): ResponseEntity<Any> =
-        if (request.isJson()) {
-            handleJson(request)
-        } else {
-            handleForm(request)
+    fun post(request: HttpServletRequest): ResponseEntity<Any> {
+        val contentType = request.contentType?.lowercase().orEmpty()
+        return when {
+            contentType.contains(MediaType.APPLICATION_JSON_VALUE) -> handleJson(request)
+            contentType.startsWith(MediaType.APPLICATION_FORM_URLENCODED_VALUE) -> handleForm(request)
+            contentType.startsWith(MediaType.MULTIPART_FORM_DATA_VALUE) -> handleForm(request)
+            contentType.isBlank() -> handleForm(request)
+            else -> throw MicropubUnsupportedMediaType("Unsupported content type: $contentType")
         }
+    }
 
     @PatchMapping(consumes = [MediaType.APPLICATION_JSON_VALUE])
     fun patch(
@@ -204,7 +208,7 @@ class MicropubController(
 
     private fun MultipartFile.toMicropubMedia(property: String): MicropubMedia =
         MicropubMedia(
-            property = property,
+            property = property.removeSuffix("[]"),
             filename = originalFilename,
             contentType = contentType,
             bytes = bytes,
@@ -230,5 +234,12 @@ class MicropubController(
 
     private fun String.postId(): String = substringAfterLast('/')
 
-    private fun HttpServletRequest.isJson(): Boolean = (contentType ?: "").contains(MediaType.APPLICATION_JSON_VALUE, ignoreCase = true)
+    private fun requestBaseUrl(request: HttpServletRequest): String {
+        val scheme = request.scheme
+        val host = request.serverName
+        if (scheme.isNullOrBlank() || host.isNullOrBlank()) return ""
+        val port = request.serverPort
+        val defaultPort = (scheme == "https" && port == 443) || (scheme == "http" && port == 80)
+        return if (defaultPort) "$scheme://$host" else "$scheme://$host:$port"
+    }
 }

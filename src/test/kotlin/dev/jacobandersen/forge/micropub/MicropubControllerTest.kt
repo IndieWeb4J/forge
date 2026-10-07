@@ -2,6 +2,7 @@ package dev.jacobandersen.forge.micropub
 
 import dev.jacobandersen.content.client.ContentReadClient
 import dev.jacobandersen.content.client.ContentWriteClient
+import dev.jacobandersen.content.client.CreatePostCommand
 import dev.jacobandersen.content.client.PostDto
 import dev.jacobandersen.content.client.WritePostResult
 import dev.jacobandersen.microformats2.Mf2Object
@@ -11,6 +12,7 @@ import dev.jacobandersen.sigil.protocol.IntrospectionResponse
 import org.hamcrest.Matchers.containsString
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.given
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
@@ -25,6 +27,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import kotlin.test.assertEquals
 
 @SpringBootTest(
     properties = [
@@ -178,6 +181,44 @@ class MicropubControllerTest {
     }
 
     @Test
+    fun `normalizes form array notation into a repeated property`() {
+        activeToken()
+        given(contentWriteClient.create(any()))
+            .willReturn(WritePostResult(id = "id-1", slug = "hello", url = "https://me.example/hello", version = 1))
+
+        val command = argumentCaptor<CreatePostCommand>()
+        mockMvc
+            .perform(
+                post("/micropub")
+                    .header("Authorization", "Bearer token")
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .param("h", "entry")
+                    .param("content", "hi")
+                    .param("category[]", "foo")
+                    .param("category[]", "bar"),
+            ).andExpect(status().isCreated)
+
+        verify(contentWriteClient).create(command.capture())
+        assertEquals(
+            listOf(Mf2Value.String("foo"), Mf2Value.String("bar")),
+            command.firstValue.post.properties["category"],
+        )
+    }
+
+    @Test
+    fun `rejects an unsupported content type`() {
+        activeToken()
+        mockMvc
+            .perform(
+                post("/micropub")
+                    .header("Authorization", "Bearer token")
+                    .contentType(MediaType.TEXT_PLAIN)
+                    .content("hi"),
+            ).andExpect(status().isUnsupportedMediaType)
+            .andExpect(jsonPath("$.error").value("invalid_request"))
+    }
+
+    @Test
     fun `rejects malformed JSON with invalid_request`() {
         activeToken()
 
@@ -213,7 +254,7 @@ class MicropubControllerTest {
         mockMvc
             .perform(get("/micropub").header("Authorization", "Bearer token").param("q", "config"))
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.media-endpoint").value("/micropub/media"))
+            .andExpect(jsonPath("$.media-endpoint").value("http://localhost/micropub/media"))
             .andExpect(jsonPath("$.syndicate-to[0].uid").value("bridgy"))
             .andExpect(jsonPath("$.syndicate-to[0].name").value("Bridgy"))
     }

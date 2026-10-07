@@ -81,6 +81,10 @@ class MicropubExceptionHandler {
     fun onMediaTypeNotSupported(e: HttpMediaTypeNotSupportedException): ResponseEntity<Map<String, Any>> =
         error(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "invalid_request", "The request content type is not supported")
 
+    @ExceptionHandler(MicropubUnsupportedMediaType::class)
+    fun onUnsupportedMediaType(e: MicropubUnsupportedMediaType): ResponseEntity<Map<String, Any>> =
+        error(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "invalid_request", e.message)
+
     @ExceptionHandler(HttpMediaTypeNotAcceptableException::class)
     fun onMediaTypeNotAcceptable(e: HttpMediaTypeNotAcceptableException): ResponseEntity<Map<String, Any>> =
         error(HttpStatus.NOT_ACCEPTABLE, "invalid_request", "No acceptable response content type was requested")
