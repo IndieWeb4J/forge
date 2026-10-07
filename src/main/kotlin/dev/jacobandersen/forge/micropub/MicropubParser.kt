@@ -49,13 +49,16 @@ class MicropubParser(
         media: List<MicropubMedia> = emptyList(),
     ): MicropubRequest {
         val h = first(params, "h")?.takeIf { it.isNotBlank() } ?: "entry"
-        val properties = linkedMapOf<String, List<Mf2Value>>()
-        params.forEach { (key, values) ->
-            if (key in RESERVED || key.startsWith("mp-")) return@forEach
-            val vs = values.filter { it.isNotBlank() }.map { Mf2Value.String(it) }
-            if (vs.isNotEmpty()) properties[key] = vs
+        // Micropub 3.1.1: a property name may carry a `[]` suffix to signal an
+        // array; normalize it away so `category[]=a&category[]=b` becomes `category`.
+        val properties = linkedMapOf<String, MutableList<Mf2Value>>()
+        params.forEach { (rawKey, values) ->
+            if (rawKey in RESERVED || rawKey.startsWith("mp-")) return@forEach
+            val key = rawKey.removeSuffix("[]")
+            val target = properties.getOrPut(key) { mutableListOf() }
+            values.filter { it.isNotBlank() }.forEach { target.add(Mf2Value.String(it)) }
         }
-        val post = Mf2Object(type = listOf("h-$h"), properties = properties)
+        val post = Mf2Object(type = listOf("h-$h"), properties = properties.mapValues { it.value.toList() })
         return MicropubRequest(
             post = post,
             slugHint = first(params, "mp-slug"),

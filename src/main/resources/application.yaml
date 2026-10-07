@@ -17,3 +17,8 @@ sigil:
 forge:
   media-endpoint: ${FORGE_MEDIA_ENDPOINT:/micropub/media}
   owner: ${FORGE_OWNER:}
+
+# Honor X-Forwarded-* from the cluster gateway so the advertised media endpoint
+# is resolved to the public origin (Micropub 3.6.1 requires a full URL).
+server:
+  forward-headers-strategy: framework

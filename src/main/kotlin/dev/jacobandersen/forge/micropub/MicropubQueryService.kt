@@ -16,11 +16,23 @@ class MicropubQueryService(
     private val contentReadClient: ContentReadClient,
     private val properties: ForgeProperties,
 ) {
-    fun config(): Map<String, Any> =
+    fun config(baseUrl: String?): Map<String, Any> =
         mapOf(
-            "media-endpoint" to properties.mediaEndpoint,
+            "media-endpoint" to mediaEndpoint(baseUrl),
             "syndicate-to" to properties.syndicateTo,
         )
+
+    /**
+     * Micropub 3.6.1 requires `media-endpoint` to be a full URL. Resolve a
+     * configured relative endpoint against the request origin when possible.
+     */
+    private fun mediaEndpoint(baseUrl: String?): String {
+        val endpoint = properties.mediaEndpoint
+        if (endpoint.startsWith("http://") || endpoint.startsWith("https://") || baseUrl.isNullOrBlank()) {
+            return endpoint
+        }
+        return "${baseUrl.trimEnd('/')}/${endpoint.trimStart('/')}"
+    }
 
     fun syndicateTo(): List<SyndicateTarget> = properties.syndicateTo
 
