@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.4](https://github.com/Marchland/forge/compare/v0.2.3...v0.2.4) (2026-10-07)
+
+
+### Bug Fixes
+
+* **micropub:** reject unknown content types, normalize form arrays, absolute media endpoint ([dd417f8](https://github.com/Marchland/forge/commit/dd417f82057d1246f70a39675557bb74d0198a84))
+* **micropub:** reject unknown content types, normalize form arrays, absolute media endpoint ([92baac7](https://github.com/Marchland/forge/commit/92baac7517404f533818fa893270336aded80393))
+
 ## [0.2.3](https://github.com/Marchland/forge/compare/v0.2.2...v0.2.3) (2026-10-06)
 
 
